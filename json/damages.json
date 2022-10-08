@@ -1,0 +1,460 @@
+{
+  "damages": [
+    {
+      "number": "1",
+      "code": "GATOR_CRACK",
+      "type": "area",
+      "name_en": "alligator cracking",
+      "name_es": "piel de cocodrilo",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "code": "BLEEDING",
+      "type": "",
+      "name_en": "bleeding",
+      "name_es": "exudación",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "5",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "6",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "7",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "8",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "9",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "10",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "11",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "12",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "13",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "14",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "15",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "16",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "17",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "18",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    },
+    {
+      "number": "19",
+      "code": "",
+      "type": "",
+      "name_en": "",
+      "name_es": "",
+      "severities": [
+        {
+          "code": "L",
+          "name_en": "low",
+          "name_es": "baja"
+        },
+        {
+          "code": "L",
+          "name_en": "medium",
+          "name_es": "media"
+        },
+        {
+          "code": "L",
+          "name_en": "high",
+          "name_es": "alta"
+        }
+      ]
+    }
+  ]
+}
