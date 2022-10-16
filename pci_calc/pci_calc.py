@@ -1,5 +1,10 @@
+import time
+
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+
+data_path = "./"
 
 dict_distress = {
     "distress_01": ["ALLIGATOR CRACKING LOW", "ALLIGATOR CRACKING MEDIUM", "ALLIGATOR CRACKING HIGH"],
@@ -152,7 +157,7 @@ class PCI:
         :return:
         """
         for x in self.distress:
-            print("\n- %s" % x, end="  >  ")
+            print("\n- %s (%s)" % (x, dict_distress[x][0].split(" ")[0]), end="  >  ")
             for y_i, y in enumerate(self.distress[x]):
                 sev = "n/a"
 
@@ -163,10 +168,13 @@ class PCI:
                 elif len(self.distress[x]) > 1 and y_i == 2:
                     sev = "High"
 
-                print("%s: (%s, %s %%)" % (
-                    sev, "{:.2f}".format(y[0]).rjust(6, ' '), "{:.2f}".format(y[1]).rjust(6, ' ')), end="  |  ")
+                if y[0] > 0:
+                    print("%s: (%s, %s, %s)" % (sev, "{:.2f}".format(y[0]).rjust(6, ' '),
+                                                "{:.2f}".format(y[1]).rjust(6, ' '),
+                                                "{:.4f}".format(y[2]).rjust(6, ' ')
+                                                ), end="  |  ")
 
-        self.distress_dataframe()
+        # self.distress_dataframe()
 
     def distress_dataframe(self):
         """
@@ -230,7 +238,7 @@ class PCI:
         :return:
         """
 
-        df_curves = pd.read_csv("../csv/curvas_pci.csv", sep=";", encoding="utf-8", decimal=",", low_memory=False)
+        df_curves = pd.read_csv(data_path + "pci_curves.csv", sep=";", encoding="utf-8", decimal=",", low_memory=False)
 
         for x in self.distress:
 
@@ -286,7 +294,7 @@ class PCI:
         :return:
         """
 
-        # Crea una lista de daños con DV en orden descendente
+        # Crea una lista de daños con DV
         df_data = []
         for x in self.distress:
             for idx_y, y in enumerate(self.distress[x]):
@@ -295,22 +303,127 @@ class PCI:
                     df_row = {"distress": x, "severity": idx_y, "dv": y[2]}
                     df_data.append(df_row)
         df_data = pd.DataFrame(df_data)
-        df_data.sort_values(by=["dv"], ascending=False, inplace=True)
 
+        # Si no hay daños, obtiene DV 0 y termina
         total = 0
+
+        # Número de daños registrados
+        n = len(df_data.index)
 
         # Si existen daños
         if not df_data.empty:
-            # total = df_data["dv"].sum()
+            # Organizamos los DV en orden descendente
+            df_data = df_data.sort_values(by=["dv"], ascending=False).reset_index(drop=True)
+
             # Si sólo hay 1 daño o el 2.º daño tiene valor <= 2
-            if len(df_data.index) == 1 or df_data.iloc[1]["dv"] <= 2:
+            if n == 1 or df_data.iloc[1]["dv"] <= 2:
+                # caso 1
+                # Obtiene el DV total y termina
                 total = df_data["dv"].sum()
             else:
-                m = 1 + 9/98 * (100 - df_data.iloc[0]["dv"])
-                print(m)
+                # caso 2
+                df_cdv = pd.read_csv(data_path + "pci_cdv.csv", sep=";", encoding="utf-8", decimal=",",
+                                     low_memory=False)
 
-                # todo
-                total = df_data["dv"].sum()
+                # Valor m (si es > 10, le asigna ese valor máximo)
+                m = 1 + 9 / 98 * (100 - df_data.iloc[0]["dv"])
+                m = 10 if m > 10 else m
+                m_int = int(np.ceil(m))
+
+                # Tabla de valores corregidos
+                df_correct = []
+
+                # Si el número de daños no supera el límite
+                if n <= (m_int - 1):
+
+                    # caso 2.1
+
+                    # Recorremos la matriz de daños y reasignamos valores < 2 en triángulo
+                    aux = 0
+                    for i in range(0, n):
+                        df_correct.append(df_data["dv"].transpose().to_dict())
+                    for i in range(n - 1, 0, -1):
+                        if df_correct[0][i] > 2:
+                            value_aux = 2
+                        else:
+                            value_aux = df_correct[0][i]
+                        aux += 1
+                        for k in range(aux, n):
+                            df_correct[k][i] = value_aux
+
+                # Si el número de daños sí supera el límite
+                else:
+
+                    # caso 2.2
+
+                    # El valor más pequeño de la primera fila será el de la posición m_int de DV
+                    for i in range(0, m_int):
+                        df_temp = df_data["dv"].head(m_int - 1)
+                        df_temp.loc[m_int - 1] = (m - m_int + 1) * df_data.iloc[m_int - 1]["dv"] if i == 0 else 0
+                        df_correct.append(df_temp.transpose().to_dict())
+
+                    aux = 0
+
+                    for i in range(m_int - 1, 0, -1):
+                        if df_correct[0][i] > 2:
+                            value_aux = 2
+                        else:
+                            value_aux = df_correct[0][i]
+                        aux += 1
+                        for k in range(aux, m_int):
+                            df_correct[k][i] = value_aux
+
+                # Convertimos la tabla en DataFrame
+                df_correct = pd.DataFrame(df_correct)
+
+                # Añadimos columna de totales y valores > 2
+                df_correct["total"] = df_correct.sum(axis=1)
+                df_correct["q"] = df_correct.drop(columns=["total"]).select_dtypes(np.number).gt(2).sum(axis=1)
+
+                # Descartamos valores de q > 7, su valor máximo
+                df_correct.loc[df_correct["q"] > 7, "q"] = 7
+
+                df_cdv_col = []
+
+                for index, row in df_correct.iterrows():
+                    # Nota: en Python el índice empieza en 0
+                    idx_row = df_cdv[df_cdv["dv"].le(row["total"])].index[-1]
+                    idx_col = str(int(row["q"]))
+
+                    # print("FILA: %d, COLUMNA: %s, VALOR: %.2f" % (idx_row, idx_col, df_cdv.iloc[idx_row][idx_col]))
+
+                    # Si no existe una fila siguiente, o el valor CDV de la fila o la siguiente son nulos
+
+                    if not (idx_row + 1) in df_cdv.index or pd.isna(df_cdv.iloc[idx_row][idx_col]) or pd.isna(
+                            df_cdv.iloc[idx_row + 1][idx_col]):
+                        if idx_row < 49:
+                            max_row = df_cdv[[idx_col]].first_valid_index()
+                            max_cdv = df_cdv.iloc[max_row][idx_col]
+                            df_cdv_col.append(max_cdv)
+                        else:
+                            df_cdv_col.append(100)
+
+                    else:
+
+                        # Obtiene el contenido del índice y el siguiente elemento
+                        cdi_idx0 = df_cdv.iloc[idx_row]["dv"]
+                        cdi_idx1 = df_cdv.iloc[idx_row + 1]["dv"]
+
+                        cdv_idx0 = df_cdv.iloc[idx_row][idx_col]
+                        cdv_idx1 = df_cdv.iloc[idx_row + 1][idx_col]
+
+                        # Cálculo del valor deducido (corregido)
+                        deduct_value = cdv_idx0 + ((cdv_idx1 - cdv_idx0) / (cdi_idx1 - cdi_idx0)) * (
+                                row["total"] - cdi_idx0)
+                        df_cdv_col.append(deduct_value)
+
+                df_correct["cdv"] = df_cdv_col
+
+                # print("Deduct values (corrected):")
+                # print(df_correct)
+
+                total = df_correct["cdv"].max()
+                # print("Total: %.2f" % total)
 
         # Si no hay daños, el PCI es 100
         return 100 - total
@@ -322,7 +435,7 @@ def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
     # Datos de la sección
     p_obj.set_section(p_state_code=p_data["STATE_CODE"],
                       p_section_id=p_data["SHRP_ID"],
-                      p_survey_date=p_data["DATE"],
+                      p_survey_date=p_data["SURVEY_DATE"],
                       p_construction_no=p_data["CONSTRUCTION_NO"],
                       p_survey_width=p_data["SURVEY_WIDTH"] if 'SURVEY_WIDTH' in p_data and not pd.isna(
                           p_data["SURVEY_WIDTH"]) else 20)
@@ -429,14 +542,17 @@ def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
 
     # Actualización de los Deducted Value (DV)
     p_obj.update_dv()
-    print("pci:", p_obj.get_pci())
 
     return p_obj
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("../csv/pci.csv", sep=";", encoding="utf-8", decimal=",", low_memory=False)
+    df = pd.read_csv("../csv/pci2.csv", sep=";", encoding="utf-8", decimal=",", low_memory=False)
+
+    start_time = time.time()
 
     for df_i in range(0, len(df.index)):
         pci_obj = import_ltpp_data(df.iloc[df_i])
-        # pci_obj.print_distresses()
+        print("- (%i) pci: %.4f" % (df_i + 1, pci_obj.get_pci()))
+
+    print("--- %s seconds ---" % (time.time() - start_time))

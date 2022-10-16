@@ -10,13 +10,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\csv\curvas_pci.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value=";" />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\csv\espesor_mezcla_nueva.csv">
           <value>
             <Attribute>
@@ -38,7 +31,21 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\csv\pci2.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\csv\umbral_deflexion.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\pci_calc\pci_cdv.csv">
           <value>
             <Attribute>
               <option name="separator" value=";" />
