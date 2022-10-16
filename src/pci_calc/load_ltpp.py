@@ -140,4 +140,4 @@ def get_ltpp_pci(p_file):
 
 
 if __name__ == "__main__":
-    get_ltpp_pci("../../csv/pci2.csv")
+    get_ltpp_pci("../../res/pci.csv")
