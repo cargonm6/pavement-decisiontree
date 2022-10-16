@@ -3,6 +3,13 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\csv\actuaciones.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\csv\categorias_trafico.csv">
           <value>
             <Attribute>
@@ -46,6 +53,13 @@
           </value>
         </entry>
         <entry key="\pci_calc\pci_cdv.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\pci_calc\pci_curves.csv">
           <value>
             <Attribute>
               <option name="separator" value=";" />

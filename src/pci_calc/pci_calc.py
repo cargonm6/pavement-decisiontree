@@ -1,10 +1,9 @@
-import time
-
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-data_path = "./"
+path_dv = "./tables/pci_curves.csv"
+path_cdv = "./tables/pci_cdv.csv"
 
 dict_distress = {
     "distress_01": ["ALLIGATOR CRACKING LOW", "ALLIGATOR CRACKING MEDIUM", "ALLIGATOR CRACKING HIGH"],
@@ -113,12 +112,12 @@ class PCI:
         :param p_section_length: longitud de la sección
         :return:
         """
-        self.state_code = p_state_code
-        self.section_id = p_section_id
-        self.survey_date = p_survey_date
-        self.construction_no = p_construction_no
-        self.survey_width = p_survey_width
-        self.section_length = p_section_length
+        self.state_code = p_state_code if not pd.isna(p_state_code) else ""
+        self.section_id = p_section_id if not pd.isna(p_section_id) else ""
+        self.survey_date = p_survey_date if not pd.isna(p_survey_date) else ""
+        self.construction_no = p_construction_no if not pd.isna(p_construction_no) else 0
+        self.survey_width = p_survey_width if not pd.isna(p_survey_width) else 0.0
+        self.section_length = p_section_length if not pd.isna(p_section_length) else 500.0
         self.section_area = p_survey_width * p_section_length
 
         self.update_density()
@@ -128,8 +127,13 @@ class PCI:
         Método para mostrar parámetros de la sección
         :return:
         """
-        print(self.state_code, self.section_id, self.survey_date, self.construction_no, self.section_area,
-              self.section_length)
+        print("State code:", self.state_code)
+        print("ID:", self.section_id)
+        print("Date:", self.survey_date)
+        print("CN:", self.construction_no)
+        print("Width:", self.survey_width)
+        print("Len:", self.section_length)
+        print("Area:", self.section_area)
 
     def set_distress(self, p_distress, p_severity, p_data):
         """
@@ -139,8 +143,10 @@ class PCI:
         :param p_data: valor del daño
         :return:
         """
-        self.distress["distress_" + str(p_distress).zfill(2)][p_severity][0] = p_data
-        self.update_density("distress_" + str(p_distress).zfill(2), p_severity)
+
+        if not pd.isna(p_data) and p_data > 0:
+            self.distress["distress_" + str(p_distress).zfill(2)][p_severity][0] = p_data
+            self.update_density("distress_" + str(p_distress).zfill(2), p_severity)
 
     def get_distress(self, p_distress, p_severity):
         """
@@ -238,7 +244,7 @@ class PCI:
         :return:
         """
 
-        df_curves = pd.read_csv(data_path + "pci_curves.csv", sep=";", encoding="utf-8", decimal=",", low_memory=False)
+        df_curves = pd.read_csv(path_dv, sep=";", encoding="utf-8", decimal=",", low_memory=False)
 
         for x in self.distress:
 
@@ -322,8 +328,7 @@ class PCI:
                 total = df_data["dv"].sum()
             else:
                 # caso 2
-                df_cdv = pd.read_csv(data_path + "pci_cdv.csv", sep=";", encoding="utf-8", decimal=",",
-                                     low_memory=False)
+                df_cdv = pd.read_csv(path_cdv, sep=";", encoding="utf-8", decimal=",", low_memory=False)
 
                 # Valor m (si es > 10, le asigna ese valor máximo)
                 m = 1 + 9 / 98 * (100 - df_data.iloc[0]["dv"])
@@ -427,132 +432,3 @@ class PCI:
 
         # Si no hay daños, el PCI es 100
         return 100 - total
-
-
-def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
-    p_obj = PCI()
-
-    # Datos de la sección
-    p_obj.set_section(p_state_code=p_data["STATE_CODE"],
-                      p_section_id=p_data["SHRP_ID"],
-                      p_survey_date=p_data["SURVEY_DATE"],
-                      p_construction_no=p_data["CONSTRUCTION_NO"],
-                      p_survey_width=p_data["SURVEY_WIDTH"] if 'SURVEY_WIDTH' in p_data and not pd.isna(
-                          p_data["SURVEY_WIDTH"]) else 20)
-
-    # 01. Piel de cocodrilo (3 severidades)
-    p_obj.set_distress(1, 0, p_data["GATOR_CRACK_A_L"])
-    p_obj.set_distress(1, 1, p_data["GATOR_CRACK_A_M"])
-    p_obj.set_distress(1, 2, p_data["GATOR_CRACK_A_H"])
-
-    # 02. Exudación (3 severidades)
-    # p_obj.set_distress(2, 0, p_data[""])
-    p_obj.set_distress(2, 1, p_data["BLEEDING"])
-    # p_obj.set_distress(2, 2, p_data[""])
-
-    # 03. Agrietamiento en bloque (3 severidades)
-    p_obj.set_distress(3, 0, p_data["BLK_CRACK_A_L"])
-    p_obj.set_distress(3, 1, p_data["BLK_CRACK_A_M"])
-    p_obj.set_distress(3, 2, p_data["BLK_CRACK_A_H"])
-
-    # 04. Abultamiento y hundimiento (3 severidades)
-    # p_obj.set_distress(4, 0, p_data[""])
-    # p_obj.set_distress(4, 1, p_data[""])
-    # p_obj.set_distress(4, 2, p_data[""])
-
-    # 05. Corrugación (3 severidades)
-    # p_obj.set_distress(5, 0, p_data[""])
-    # p_obj.set_distress(5, 1, p_data[""])
-    # p_obj.set_distress(5, 2, p_data[""])
-
-    # 06. Depresión (3 severidades)
-    # p_obj.set_distress(6, 0, p_data[""])
-    # p_obj.set_distress(6, 1, p_data[""])
-    # p_obj.set_distress(6, 2, p_data[""])
-
-    # 07. Grieta de borde (3 severidades)
-    p_obj.set_distress(7, 0, p_data["EDGE_CRACK_L_L"])
-    p_obj.set_distress(7, 1, p_data["EDGE_CRACK_L_M"])
-    p_obj.set_distress(7, 2, p_data["EDGE_CRACK_L_H"])
-
-    # 08. Grieta de reflexión de junta (3 severidades)
-    # p_obj.set_distress(8, 0, p_data[""])
-    # p_obj.set_distress(8, 1, p_data[""])
-    # p_obj.set_distress(8, 2, p_data[""])
-
-    # 09. Desnivel carril/berma (3 severidades)
-    # p_obj.set_distress(9, 0, p_data[""])
-    # p_obj.set_distress(9, 1, p_data[""])
-    # p_obj.set_distress(9, 2, p_data[""])
-
-    # 10. Grieta longitudinal/transversal (3 severidades)
-    # p_data["TRANS_CRACK_NO_X"]
-    p_obj.set_distress(10, 0, p_data["LONG_CRACK_WP_L_L"] + p_data["LONG_CRACK_WP_SEAL_L_L"] +
-                       p_data["LONG_CRACK_NWP_L_L"] + p_data["LONG_CRACK_NWP_SEAL_L_L"] +
-                       p_data["TRANS_CRACK_L_L"] + p_data["TRANS_CRACK_SEAL_L_L"])
-    p_obj.set_distress(10, 1, p_data["LONG_CRACK_WP_L_M"] + p_data["LONG_CRACK_WP_SEAL_L_M"] +
-                       p_data["LONG_CRACK_NWP_L_M"] + p_data["LONG_CRACK_NWP_SEAL_L_M"] +
-                       p_data["TRANS_CRACK_L_M"] + p_data["TRANS_CRACK_SEAL_L_M"])
-    p_obj.set_distress(10, 2, p_data["LONG_CRACK_WP_L_H"] + p_data["LONG_CRACK_WP_SEAL_L_H"] +
-                       p_data["LONG_CRACK_NWP_L_H"] + p_data["LONG_CRACK_NWP_SEAL_L_H"] +
-                       p_data["TRANS_CRACK_L_H"] + p_data["TRANS_CRACK_SEAL_L_H"])
-
-    # 11. Parcheo (3 severidades)
-    p_obj.set_distress(11, 0, p_data["PATCH_A_L"])
-    p_obj.set_distress(11, 1, p_data["PATCH_A_M"])
-    p_obj.set_distress(11, 2, p_data["PATCH_A_H"])
-
-    # 12. Pulimento de agregados (1 severidad)
-    p_obj.set_distress(12, 0, p_data["POLISH_AGG_A"])
-
-    # 13. Huecos (3 severidades)
-    p_obj.set_distress(13, 0, p_data["POTHOLES_NO_L"])
-    p_obj.set_distress(13, 1, p_data["POTHOLES_NO_M"])
-    p_obj.set_distress(13, 2, p_data["POTHOLES_NO_H"])
-
-    # 14. Cruce de vía férrea (3 severidades)
-    # p_obj.set_distress(14, 0, p_data[""])
-    # p_obj.set_distress(14, 1, p_data[""])
-    # p_obj.set_distress(14, 2, p_data[""])
-
-    # 15. Ahuellamiento (3 severidades)
-    # p_obj.set_distress(15, 0, p_data[""])
-    # p_obj.set_distress(15, 1, p_data[""])
-    # p_obj.set_distress(15, 2, p_data[""])
-
-    # 16. Desplazamiento (3 severidades)
-    # p_obj.set_distress(16, 0, p_data[""])
-    p_obj.set_distress(16, 1, p_data["SHOVING_A"])
-    # p_obj.set_distress(16, 2, p_data[""])
-
-    # 17. Grieta parabólica (3 severidades)
-    # p_obj.set_distress(17, 0, p_data[""])
-    # p_obj.set_distress(17, 1, p_data[""])
-    # p_obj.set_distress(17, 2, p_data[""])
-
-    # 18. Hinchamiento (3 severidades)
-    # p_obj.set_distress(18, 0, p_data[""])
-    # p_obj.set_distress(18, 1, p_data[""])
-    # p_obj.set_distress(18, 2, p_data[""])
-
-    # 19. Desprendimiento de agregados (3 severidades)
-    # p_obj.set_distress(19, 0, p_data[""])
-    p_obj.set_distress(19, 1, p_data["RAVELING"])
-    # p_obj.set_distress(19, 2, p_data[""])
-
-    # Actualización de los Deducted Value (DV)
-    p_obj.update_dv()
-
-    return p_obj
-
-
-if __name__ == "__main__":
-    df = pd.read_csv("../csv/pci2.csv", sep=";", encoding="utf-8", decimal=",", low_memory=False)
-
-    start_time = time.time()
-
-    for df_i in range(0, len(df.index)):
-        pci_obj = import_ltpp_data(df.iloc[df_i])
-        print("- (%i) pci: %.4f" % (df_i + 1, pci_obj.get_pci()))
-
-    print("--- %s seconds ---" % (time.time() - start_time))
