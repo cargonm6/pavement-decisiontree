@@ -62,45 +62,42 @@ def check(list_1, list_2):
 def highest_priority(p_list):
     """
     Elimina actuaciones en favor de las prioritarias
-    :param p_list:
+    :param p_list: lista de actuaciones (número y densidad relativa)
     :return: lista de actuaciones
     """
 
+    # Lista de actuaciones (sólo número)
     n_list = [p[0] for p in p_list]
-
-    # Orden de prioridad de las actuaciones (de menos a más restrictivo)
-    order = [[6, 3],
-             [6, 2],
-             [6, 1],
-             [3, 2],
-             [3, 1],
-             [2, 1]]
-
-    print(n_list)
 
     # Si el número de actuaciones susceptible es mayor a uno
     if sum(el in n_list for el in [1, 2, 3, 6]) > 1:
 
+        # Orden de prioridad de las actuaciones (de menos a más restrictivo)
+        order = []
+
+        for i in [[6, 3], [6, 2], [6, 1], [3, 2], [3, 1], [2, 1]]:
+            # Si los elementos están en la lista, añade el orden
+            order.append(i) if check([i[0]], n_list) and check([i[1]], n_list) else 0
+
         # Por cada combinación de jerarquía
-        for i in order:
+        for i, comb in enumerate(order):
 
-            # Si los elementos están en la lista
-            if check([i[0]], n_list) and check([i[1]], n_list):
+            # Índices
+            idx_0 = n_list.index(comb[0])
+            idx_1 = n_list.index(comb[1])
 
-                # Índices
-                idx_0 = n_list.index(i[0])
-                idx_1 = n_list.index(i[1])
+            # Densidades
+            density_0 = p_list[idx_0][1]
+            density_1 = p_list[idx_1][1]
 
-                # Densidades
-                density_0 = p_list[idx_0][1]
-                density_1 = p_list[idx_1][1]
+            # Si la densidad del primero no supera el límite, o sí lo supera pero el segundo también
+            if density_0 < min_density or density_1 >= min_density:
+                # Marca el primero para eliminar, poniendo la actuación a "0"
+                p_list[idx_0][0] = 0
 
-                # Si la densidad del primero no supera el límite, o sí lo supera pero el segundo también
-                if density_0 < min_density or density_1 >= min_density:
-                    # Marca el primero para eliminar, poniendo la actuación a "0"
-                    p_list[idx_0][0] = 0
-
-    # TODO: SI YA SÓLO QUEDA UNA i, Y EL ELEMENTO 1 NO SUPERA EL MÍNIMO PERO EL 0 SÍ, ELIMINAS ESE ÚLTIMO
+            # Si es la última combinación, el primero supera el límite pero el segundo no
+            elif i == len(order) - 1 and density_1 < min_density:
+                p_list[idx_1][0] = 0
 
     good_list = []
 
@@ -175,22 +172,11 @@ def initial_performance(p_damages, p_density):
 
         # Densidad relativa a la suma de densidades de daños
         perf_density = sum(j[1] for j in list_i) / p_density
-
         p_perf.append([i, perf_density])
 
-    for i in p_perf:
-        print("-", i)
-
+    # Seguimos el orden de prioridad para seleccionar entre las actuaciones obtenidas
     p_perf = highest_priority(p_perf)
-
-    print("---")
-
-    for i in p_perf:
-        print("-", i)
-
-    input("....................................")
-
-    return p_plist
+    return p_perf
 
 
 def get_traffic_category(p_imd: float) -> str:

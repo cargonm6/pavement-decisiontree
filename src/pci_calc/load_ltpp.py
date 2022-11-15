@@ -161,7 +161,7 @@ def get_ltpp_pci(p_file):
 
     pci_result = []
 
-    for df_i in range(0, 50):  # len(df)
+    for df_i in range(0, len(df)):
         # Por cada fila, importamos valores y convertimos nulos a ceros
         pci_result.append(import_ltpp_data(df.iloc[df_i].fillna(0)))
 
