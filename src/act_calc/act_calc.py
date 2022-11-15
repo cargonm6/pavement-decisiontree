@@ -1,39 +1,40 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 
-path_table_performances = "./tables/actuaciones.csv"
-path_table_trf_category = "./tables/categorias_trafico.csv"
-path_table_road_surface = "./tables/firmes.csv"
-path_table_df_threshold = "./tables/umbral_deflexion.csv"
-path_table_df_thickness = "./tables/espesor_mezcla_nueva.csv"
+from src.pci_calc.pci_calc import PCI
 
-dict_damages = {
-    # Grietas de cocodrilo
-    "GATOR_CRACK_A_L": 1, "GATOR_CRACK_A_M": 2, "GATOR_CRACK_A_H": 3,
-    # Surgencias de finos
-    "PUMPING_A_H": 4,
-    # Corrugación (ondulaciones)
-    "CORRUGATION_A_L": 5, "CORRUGATION_A_M": 6, "CORRUGATION_A_H": 7,
-    # Depresión (hundimiento)
-    "DEPRESSION_A_L": 8, "DEPRESSION_A_M": 9, "DEPRESSION_A_H": 10,
-    # Grietas de borde (en el eje)
-    "EDGE_CRACK_L_L": 11, "EDGE_CRACK_L_M": 12, "EDGE_CRACK_L_H": 13,
-    # Grietas reflejadas
-    "JOINT_REFL_CRACK_L_L": 14, "JOINT_REFL_CRACK_L_M": 15, "JOINT_REFL_CRACK_L_H": 16,
-    # Grietas longitudinales y transversales
-    "LONG_TRANS_CRACK_L_L": 17, "LONG_TRANS_CRACK_L_M": 18, "LONG_TRANS_CRACK_L_H": 19,
-    # Pulimiento de agregados (pavimento deslizante)
-    "POLISH_AGG_A_H": 20,
-    # Huecos (baches)
-    "POTHOLES_NO_L": 21, "POTHOLES_NO_M": 22, "POTHOLES_NO_H": 23,
-    # Ahuellamiento (roderas)
-    "RUTTING_A_L": 24, "RUTTING_A_M": 25, "RUTTING_A_H": 26,
-    # Desplazamiento vertical (escalón)
-    "SHOVING_A_L": 27, "SHOVING_A_M": 28, "SHOVING_A_H": 29,
-    # Desprendimiento de agregados
-    "RAVELING_A_M": 30,
-    # Exudaciones
-    "BLEEDING_A_M": 31
+working_directory = ""
+min_density = 0.1  # 10 %
+
+path_table_performances = "/src/act_calc/tables/actuaciones.csv"
+path_table_trf_category = "/src/act_calc/tables/categorias_trafico.csv"
+path_table_road_surface = "/src/act_calc/tables/firmes.csv"
+path_table_df_threshold = "/src/act_calc/tables/umbral_deflexion.csv"
+path_table_df_thickness = "/src/act_calc/tables/espesor_mezcla_nueva.csv"
+
+dict_distress = {
+    "distress_01": ["ALLIGATOR CRACKING LOW", "ALLIGATOR CRACKING MEDIUM", "ALLIGATOR CRACKING HIGH"],
+    "distress_02": ["BLEEDING LOW", "BLEEDING MEDIUM", "BLEEDING HIGH"],
+    "distress_03": ["BLOCK CRACKING LOW", "BLOCK CRACKING MEDIUM", "BLOCK CRACKING HIGH"],
+    "distress_04": ["BUMPS AND SAGS LOW", "BUMPS AND SAGS MEDIUM", "BUMPS AND SAGS HIGH"],
+    "distress_05": ["CORRUGATION LOW", "CORRUGATION MEDIUM", "CORRUGATION HIGH"],
+    "distress_06": ["DEPRESSION LOW", "DEPRESSION MEDIUM", "DEPRESSION HIGH"],
+    "distress_07": ["EDGE CRACKING LOW", "EDGE CRACKING MEDIUM", "EDGE CRACKING HIGH"],
+    "distress_08": ["JOINT REFLECTION CRACKING LOW", "JOINT REFLECTION CRACKING MEDIUM",
+                    "JOINT REFLECTION CRACKING HIGH"],
+    "distress_09": ["LANE-SHOULDER DROP OFF LOW", "LANE-SHOULDER DROP OFF MEDIUM", "LANE-SHOULDER DROP OFF HIGH"],
+    "distress_10": ["LONG-TRANS CRACKING LOW", "LONG-TRANS CRACKING MEDIUM", "LONG-TRANS CRACKING HIGH"],
+    "distress_11": ["PATCHING LOW", "PATCHING MEDIUM", "PATCHING HIGH"],
+    "distress_12": ["POLISHED AGGREGATE ALL"],
+    "distress_13": ["POTHOLES LOW", "POTHOLES MEDIUM", "POTHOLES HIGH"],
+    "distress_14": ["RAILROAD CROSSING LOW", "RAILROAD CROSSING MEDIUM", "RAILROAD CROSSING HIGH"],
+    "distress_15": ["RUTTING LOW", "RUTTING MEDIUM", "RUTTING HIGH"],
+    "distress_16": ["SHOVING LOW", "SHOVING MEDIUM", "SHOVING HIGH"],
+    "distress_17": ["SLIPPAGE CRACKING LOW", "SLIPPAGE CRACKING MEDIUM", "SLIPPAGE CRACKING HIGH"],
+    "distress_18": ["SWELL LOW", "SWELL MEDIUM", "SWELL HIGH"],
+    "distress_19": ["WEATHERING AND RAVELING LOW", "WEATHERING AND RAVELING MEDIUM", "WEATHERING AND RAVELING HIGH"]
 }
 
 dict_performances = {
@@ -58,63 +59,136 @@ def check(list_1, list_2):
     return False
 
 
-def highest_priority(p_plist):
+def highest_priority(p_list):
     """
     Elimina actuaciones en favor de las prioritarias
-    :param p_plist: lista de actuaciones
+    :param p_list:
     :return: lista de actuaciones
     """
-    # Si existen actuaciones de mayor prioridad que 6, la retiramos (casos 1, 2, 3)
-    if check([6], p_plist) and (check([3], p_plist) or check([2], p_plist) or check([1], p_plist)):
-        p_plist.pop(p_plist.index(6))
 
-    # Si existen actuaciones de mayor prioridad que 3, la retiramos (casos 1, 2)
-    if check([3], p_plist) and (check([2], p_plist) or check([1], p_plist)):
-        p_plist.pop(p_plist.index(3))
+    n_list = [p[0] for p in p_list]
 
-    # Si existen actuaciones de mayor prioridad que 2, la retiramos (caso 1)
-    if check([2], p_plist) and check([1], p_plist):
-        p_plist.pop(p_plist.index(2))
+    # Orden de prioridad de las actuaciones (de menos a más restrictivo)
+    order = [[6, 3],
+             [6, 2],
+             [6, 1],
+             [3, 2],
+             [3, 1],
+             [2, 1]]
 
-    return p_plist
+    print(n_list)
+
+    # Si el número de actuaciones susceptible es mayor a uno
+    if sum(el in n_list for el in [1, 2, 3, 6]) > 1:
+
+        # Por cada combinación de jerarquía
+        for i in order:
+
+            # Si los elementos están en la lista
+            if check([i[0]], n_list) and check([i[1]], n_list):
+
+                # Índices
+                idx_0 = n_list.index(i[0])
+                idx_1 = n_list.index(i[1])
+
+                # Densidades
+                density_0 = p_list[idx_0][1]
+                density_1 = p_list[idx_1][1]
+
+                # Si la densidad del primero no supera el límite, o sí lo supera pero el segundo también
+                if density_0 < min_density or density_1 >= min_density:
+                    # Marca el primero para eliminar, poniendo la actuación a "0"
+                    p_list[idx_0][0] = 0
+
+    # TODO: SI YA SÓLO QUEDA UNA i, Y EL ELEMENTO 1 NO SUPERA EL MÍNIMO PERO EL 0 SÍ, ELIMINAS ESE ÚLTIMO
+
+    good_list = []
+
+    for element in p_list:
+        if element[0] != 0:
+            good_list.append(element)
+
+    return good_list
 
 
-def initial_performance(p_damages):
+def initial_performance(p_damages, p_density):
     """
     Obtiene la lista de actuaciones para un conjunto de daños de entrada
-    :param p_damages:
+    :param p_density: densidad total de los daños asociados
+    :param p_damages: daños asociados (nombre + densidad)
     :return:
     """
-    p_dlist = []  # Lista numérica de daños (damage list)
-    p_plist = []  # Lista numérica de actuaciones (performance list)
+    p_dlist = []  # Lista de daños (damage list)
+    p_plist = []  # Lista de actuaciones (performance list)
 
-    table_performance = pd.read_csv(path_table_performances, delimiter=";", header=None)
+    # Convierte el diccionario en grupos de daños y densidad
+    for i, damage in enumerate(p_damages):
+        for j, severity in enumerate(p_damages[damage]):
 
-    # Obtenemos el número identificativo de cada tipo de daño, y los ordenamos
-    for p_damage in p_damages:
-        p_dlist.append(dict_damages[p_damage])
+            # Existe un daño particular
+            if severity[0] > 0:
+                p_dlist.append([list(dict_distress.values())[i][j]])
+                p_dlist[-1].append(severity[1])
 
-    p_dlist.sort()
+    table_performance = pd.read_csv(working_directory + path_table_performances, delimiter=";", dtype=object,
+                                    index_col='INDEX')
 
     # Para cada fila (núm. de daño)
     for p_i in p_dlist:
 
+        # Si el nombre de daño no está presente en la tabla (índices o columnas)
+        if not p_i[0] in table_performance.index.values.tolist():
+            continue
+
         # Para cada columna (núm. de daño)
         for p_k in p_dlist:
+            # Si el nombre de daño no está presente en la tabla (índices o columnas)
+            if not p_k[0] in table_performance.columns:
+                continue
+
+            performance = table_performance.loc[p_i[0], p_k[0]]
 
             # Obtenemos la actuación. Si es nula, pasamos. Si son dos, las separamos.
-            performance = table_performance.iloc[p_i, p_k]
-
             if pd.isna(performance):
                 continue
-            elif isinstance(performance, str):
-                p_plist.extend(int(x) for x in performance.split("+"))
-            else:
-                p_plist.append(int(performance))
 
-    # Elimina actuaciones repetidas, y prioriza actuaciones
-    p_plist = list(dict.fromkeys(p_plist))
-    p_plist = highest_priority(p_plist)
+            for perf in performance.split("+"):
+                p_plist.append([int(perf), p_i, p_k])
+
+    p_plist = sorted(p_plist)
+    p_perf = []
+    p_perf_dif = list(dict.fromkeys([perf[0] for perf in p_plist]))
+
+    # Para cada actuación diferente (i)
+    for i in p_perf_dif:
+
+        list_i = []
+
+        # Para cada elemento de actuación en la lista
+        for j, val in enumerate(p_plist):
+            # Si se corresponde con la actuación i, lo añade
+            list_i.extend(val[1:3]) if val[0] == i else 0
+
+        # Elimina daños duplicados de todas las actuaciones añadidas
+        list_i.sort()
+        list_i = list(k for k, _ in itertools.groupby(list_i))
+
+        # Densidad relativa a la suma de densidades de daños
+        perf_density = sum(j[1] for j in list_i) / p_density
+
+        p_perf.append([i, perf_density])
+
+    for i in p_perf:
+        print("-", i)
+
+    p_perf = highest_priority(p_perf)
+
+    print("---")
+
+    for i in p_perf:
+        print("-", i)
+
+    input("....................................")
 
     return p_plist
 
@@ -190,49 +264,53 @@ Obtiene la categoría de tráfico pesado a partir del IMDp
     return p_table.loc[p_age, p_trf_category]
 
 
-if __name__ == "__main__":
+def main(pw_dir: str, pci_obj: PCI):
     # Ejemplo (1.1)
-    print("\n== EJEMPLO 1 ==")
-
-    IMD = 758
-    trf_category = get_traffic_category(IMD)
-    trf_layers = get_pavement_layers(trf_category)
-
-    print("- IMD seleccionado: %.2f vehículos pesados/día" % IMD)
-    print("- Categoría de firme resultante: %s" % trf_category)
-    print("- Capas del firme:")
-    for trf_layer in trf_layers:
-        if trf_layer[1] is None:
-            print("  · %s: espesor y mezcla no determinados" % trf_layer[0])
-        else:
-            print("  · %s: espesor de %s cm, mezcla %s" % (trf_layer[0], trf_layer[1], trf_layer[2]))
+    # print("\n== EJEMPLO 1 ==")
+    #
+    # IMD = 758
+    # trf_category = get_traffic_category(IMD)
+    # trf_layers = get_pavement_layers(trf_category)
+    #
+    # print("- IMD seleccionado: %.2f vehículos pesados/día" % IMD)
+    # print("- Categoría de firme resultante: %s" % trf_category)
+    # print("- Capas del firme:")
+    # for trf_layer in trf_layers:
+    #     if trf_layer[1] is None:
+    #         print("  · %s: espesor y mezcla no determinados" % trf_layer[0])
+    #     else:
+    #         print("  · %s: espesor de %s cm, mezcla %s" % (trf_layer[0], trf_layer[1], trf_layer[2]))
 
     # Ejemplo (1.2)
 
-    deflection = 156
-    road_age = "nuevas"
-    road_thickness = 8
-
-    if deflection > get_def_threshold(road_thickness, trf_category):
-        deflection_thick = get_def_thickness(road_age, trf_category)
-        print("- La vía requiere una actuación con un espesor de %d cm de mezcla nueva bituminosa" % deflection_thick)
-    else:
-        print("- La vía no requiere una actuación con mezcla nueva bituminosa")
-
-    input("clic para continuar...")
+    # deflection = 156
+    # road_age = "nuevas"
+    # road_thickness = 8
+    #
+    # if deflection > get_def_threshold(road_thickness, trf_category):
+    #     deflection_thick = get_def_thickness(road_age, trf_category)
+    #     print("- La vía requiere una actuación con un espesor de %d cm de mezcla nueva bituminosa" % deflection_thick)
+    # else:
+    #     print("- La vía no requiere una actuación con mezcla nueva bituminosa")
+    #
+    # input("clic para continuar...")
 
     # Ejemplo (2)
-    print("\n== EJEMPLO 2 ==")
 
-    damages = ["GATOR_CRACK_A_M", "EDGE_CRACK_L_H", "BLEEDING_A_M", "PUMPING_A_H"]
-    performances = initial_performance(damages)
+    global working_directory
+    working_directory = pw_dir
 
-    print("\nDaños escogidos:")
-    for d in damages:
-        print("-", d)
-    print("\nActuaciones:")
-    for p in performances:
-        print("-", p, dict_performances[p])
+    damages = pci_obj.get_all_distresses()
+    density = pci_obj.get_density()
+
+    performances = initial_performance(damages, density)
+    #
+    # print("\nDaños escogidos:")
+    # for d in damages:
+    #     print("-", d)
+    # print("\nActuaciones:")
+    # for p in performances:
+    #     print("-", p, dict_performances[p])
 
     # TODO: Costes asociados a cada actuación (¿se unificarán criterios?)
 

@@ -1,8 +1,33 @@
-import time
+import sys
 
 import pandas as pd
 
-from pci_calc import PCI
+from src.pci_calc.pci_calc import PCI
+
+working_directory = ""
+
+dict_distress = {
+    "distress_01": ["ALLIGATOR CRACKING LOW", "ALLIGATOR CRACKING MEDIUM", "ALLIGATOR CRACKING HIGH"],
+    "distress_02": ["BLEEDING LOW", "BLEEDING MEDIUM", "BLEEDING HIGH"],
+    "distress_03": ["BLOCK CRACKING LOW", "BLOCK CRACKING MEDIUM", "BLOCK CRACKING HIGH"],
+    "distress_04": ["BUMPS AND SAGS LOW", "BUMPS AND SAGS MEDIUM", "BUMPS AND SAGS HIGH"],
+    "distress_05": ["CORRUGATION LOW", "CORRUGATION MEDIUM", "CORRUGATION HIGH"],
+    "distress_06": ["DEPRESSION LOW", "DEPRESSION MEDIUM", "DEPRESSION HIGH"],
+    "distress_07": ["EDGE CRACKING LOW", "EDGE CRACKING MEDIUM", "EDGE CRACKING HIGH"],
+    "distress_08": ["JOINT REFLECTION CRACKING LOW", "JOINT REFLECTION CRACKING MEDIUM",
+                    "JOINT REFLECTION CRACKING HIGH"],
+    "distress_09": ["LANE-SHOULDER DROP OFF LOW", "LANE-SHOULDER DROP OFF MEDIUM", "LANE-SHOULDER DROP OFF HIGH"],
+    "distress_10": ["LONG-TRANS CRACKING LOW", "LONG-TRANS CRACKING MEDIUM", "LONG-TRANS CRACKING HIGH"],
+    "distress_11": ["PATCHING LOW", "PATCHING MEDIUM", "PATCHING HIGH"],
+    "distress_12": ["POLISHED AGGREGATE ALL"],
+    "distress_13": ["POTHOLES LOW", "POTHOLES MEDIUM", "POTHOLES HIGH"],
+    "distress_14": ["RAILROAD CROSSING LOW", "RAILROAD CROSSING MEDIUM", "RAILROAD CROSSING HIGH"],
+    "distress_15": ["RUTTING LOW", "RUTTING MEDIUM", "RUTTING HIGH"],
+    "distress_16": ["SHOVING LOW", "SHOVING MEDIUM", "SHOVING HIGH"],
+    "distress_17": ["SLIPPAGE CRACKING LOW", "SLIPPAGE CRACKING MEDIUM", "SLIPPAGE CRACKING HIGH"],
+    "distress_18": ["SWELL LOW", "SWELL MEDIUM", "SWELL HIGH"],
+    "distress_19": ["WEATHERING AND RAVELING LOW", "WEATHERING AND RAVELING MEDIUM", "WEATHERING AND RAVELING HIGH"]
+}
 
 
 def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
@@ -11,12 +36,12 @@ def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
     :param p_data:
     :return:
     """
-    p_obj = PCI()
+    p_obj = PCI(working_directory)
 
     # Datos de la sección
     p_obj.set_section(p_state_code=p_data["STATE_CODE"],
                       p_section_id=p_data["SHRP_ID"],
-                      p_survey_date=p_data["SURVEY_DATE"],
+                      p_survey_date=p_data["DATE"],
                       p_construction_no=p_data["CONSTRUCTION_NO"],
                       p_survey_width=p_data["SURVEY_WIDTH"])
 
@@ -120,24 +145,54 @@ def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
     # p_obj.set_distress(19, 2, p_data[""])
 
     # Actualización de los Deducted Value (DV)
+
+    p_obj.update_density()
     p_obj.update_dv()
+    p_obj.update_pci()
 
     return p_obj
 
 
 def get_ltpp_pci(p_file):
-    start_time = time.time()
+    # start_time = time.time()
 
     # Leemos el fichero de datos de LTPP
     df = pd.read_csv(p_file, sep=";", encoding="utf-8", decimal=",", low_memory=False)
 
-    for df_i in range(0, len(df)):
-        # Por cada fila, importamos valores y convertimos nulos a cero
-        pci_obj = import_ltpp_data(df.iloc[df_i].fillna(0))
-        print("- (%i) pci: %.4f" % (df_i + 1, pci_obj.get_pci()))
+    pci_result = []
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+    for df_i in range(0, 50):  # len(df)
+        # Por cada fila, importamos valores y convertimos nulos a ceros
+        pci_result.append(import_ltpp_data(df.iloc[df_i].fillna(0)))
+
+        sys.stdout.write("\r- Calculating PCI from LTPP rows... %.2f %%" % (100 * (df_i + 1) / len(df)))
+
+    print("")
+
+    # print("- (%i) predicted pci: %.4f, real pci: %.4f, desv: %.2f" % (
+    #     df_i + 1, pci_res, df["PCI_old"].iloc[df_i], df["PCI_old"].iloc[df_i] - pci_res))
+
+    # SUMO FILAS -> SUMO DAÑOS POR SEPARADO Y ANCHO, LARGO...
+
+    # Calculo el PCI del conjunto de fotos (tengo densidades de los daños y valor final de PCI)
+    # Obtengo la actuación en función de esas densidades y PCI
+
+    # df["PCI"] = pci_result
+    #
+    # df.to_csv(p_file, sep=";", decimal=",", index=False)
+    #
+    # print("--- %s seconds ---" % (time.time() - start_time))
+
+    return pci_result
+
+
+def main(pw_dir: str):
+    global working_directory
+    working_directory = pw_dir
+
+    p_file = pw_dir + "/res/ant_pci.csv"
+    return get_ltpp_pci(p_file)
 
 
 if __name__ == "__main__":
-    get_ltpp_pci("../../res/pci.csv")
+    get_ltpp_pci("../../res/ant_pci.csv")

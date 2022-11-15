@@ -2,8 +2,9 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-path_dv = "./tables/pci_curves.csv"
-path_cdv = "./tables/pci_cdv.csv"
+working_directory = ""
+path_dv = "/src/pci_calc/tables/pci_curves.csv"
+path_cdv = "/src/pci_calc/tables/pci_cdv.csv"
 
 dict_distress = {
     "distress_01": ["ALLIGATOR CRACKING LOW", "ALLIGATOR CRACKING MEDIUM", "ALLIGATOR CRACKING HIGH"],
@@ -50,27 +51,15 @@ dict_distress = {
 # 18. Hinchamiento (3 severidades)
 # 19. Desprendimiento de agregados (3 severidades)
 
-# Daños según actuaciones
-# Valores de 3D:
-# - (A, 3 sev.) Grietas de cocodrilo
-# - (A, 3 sev.) Corrugación
-# - (A, 3 sev.) Depresión
-# - (A, 3 sev.) Ahuellamiento
-# - (A, 3 sev.) Desplazamiento vertical
-# - (A, 1 sev.) Surgencia de finos
-# - (A, 1 sev.) Pulimento de agregados
-# - (A, 1 sev.) Desprendimiento de agregados
-# - (A, 1 sev.) Exudaciones
-# - (L, 3 sev.) Grietas reflejadas
-# - (L, 3 sev.) Grietas longitudinales/transversales
-# - (N, 3 sev.) Huecos
-
 
 class PCI:
-    def __init__(self):
+    def __init__(self, pw_dir="."):
         """
         Método constructor
         """
+        global working_directory
+        working_directory = pw_dir
+
         self.state_code = ""
         self.section_id = ""
         self.survey_date = ""
@@ -78,6 +67,8 @@ class PCI:
         self.survey_width = 50
         self.section_length = 500.0
         self.section_area = self.survey_width * self.section_length
+        self.pci = 0
+        self.dmg_density = 0
 
         # Distress_no = [Low/Medium/High: quantity/density/deducted value]
         self.distress = {"distress_01": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -120,8 +111,6 @@ class PCI:
         self.section_length = p_section_length if not pd.isna(p_section_length) else 500.0
         self.section_area = p_survey_width * p_section_length
 
-        self.update_density()
-
     def print_section(self):
         """
         Método para mostrar parámetros de la sección
@@ -146,7 +135,6 @@ class PCI:
 
         if not pd.isna(p_data) and p_data > 0:
             self.distress["distress_" + str(p_distress).zfill(2)][p_severity][0] = p_data
-            self.update_density("distress_" + str(p_distress).zfill(2), p_severity)
 
     def get_distress(self, p_distress, p_severity):
         """
@@ -156,6 +144,15 @@ class PCI:
         :return:
         """
         return self.distress["distress_" + str(p_distress).zfill(2)][p_severity]
+
+    def get_all_distresses(self):
+        return self.distress
+
+    def get_density(self):
+        return self.dmg_density
+
+    def get_pci(self):
+        return self.pci
 
     def print_distresses(self):
         """
@@ -238,13 +235,20 @@ class PCI:
             self.distress[p_distress][p_severity][1] = 100 * self.distress[p_distress][p_severity][
                 0] / self.section_area
 
+        # Actualizo el valor total de densidad de daños en función del área total
+        self.dmg_density = 0
+
+        for i in self.distress:
+            for j in self.distress[i]:
+                self.dmg_density += j[1]
+
     def update_dv(self):
         """
         Actualiza los Deduct Value (DV) de cada daño, en función de sus densidades
         :return:
         """
 
-        df_curves = pd.read_csv(path_dv, sep=";", encoding="utf-8", decimal=",", low_memory=False)
+        df_curves = pd.read_csv(working_directory + path_dv, sep=";", encoding="utf-8", decimal=",", low_memory=False)
 
         for x in self.distress:
 
@@ -294,7 +298,7 @@ class PCI:
                     # Asignación del valor deducido
                     y[2] = deduct_value
 
-    def get_pci(self) -> float:
+    def update_pci(self):
         """
         Aplica la corrección de DV y obtiene el PCI
         :return:
@@ -328,7 +332,8 @@ class PCI:
                 total = df_data["dv"].sum()
             else:
                 # caso 2
-                df_cdv = pd.read_csv(path_cdv, sep=";", encoding="utf-8", decimal=",", low_memory=False)
+                df_cdv = pd.read_csv(working_directory + path_cdv, sep=";", encoding="utf-8", decimal=",",
+                                     low_memory=False)
 
                 # Valor m (si es > 10, le asigna ese valor máximo)
                 m = 1 + 9 / 98 * (100 - df_data.iloc[0]["dv"])
@@ -431,4 +436,4 @@ class PCI:
                 # print("Total: %.2f" % total)
 
         # Si no hay daños, el PCI es 100
-        return 100 - total
+        self.pci = 100 - total
