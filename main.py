@@ -8,4 +8,5 @@ if __name__ == "__main__":
     section_list = load_ltpp.main(w_dir)
 
     for section in section_list:
-        performances = act_calc.main(w_dir, section)
+        print(section.get_pci())
+        # performances = act_calc.main(w_dir, section)

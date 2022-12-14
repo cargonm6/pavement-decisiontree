@@ -53,18 +53,14 @@ dict_distress = {
 
 
 class PCI:
-    def __init__(self, pw_dir="."):
+    def __init__(self, pw_dir: str = "."):
         """
         Método constructor
         """
         global working_directory
         working_directory = pw_dir
 
-        self.state_code = ""
-        self.section_id = ""
-        self.survey_date = ""
-        self.construction_no = 0
-        self.survey_width = 50
+        self.survey_width = 0.0
         self.section_length = 500.0
         self.section_area = self.survey_width * self.section_length
         self.pci = 0
@@ -91,22 +87,13 @@ class PCI:
                          "distress_18": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
                          "distress_19": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]}
 
-    def set_section(self, p_state_code: str = "", p_section_id: str = "", p_survey_date: str = "",
-                    p_construction_no: int = 0, p_survey_width: float = 0.0, p_section_length: float = 500.0):
+    def set_section(self, p_survey_width: float = 0.0, p_section_length: float = 500.0):
         """
         Método para definir parámetros de la sección
-        :param p_state_code: código de estado
-        :param p_section_id: ID de sección
-        :param p_survey_date: fecha de muestra
-        :param p_construction_no: número de construcción
         :param p_survey_width: ancho de muestra
         :param p_section_length: longitud de la sección
         :return:
         """
-        self.state_code = p_state_code if not pd.isna(p_state_code) else ""
-        self.section_id = p_section_id if not pd.isna(p_section_id) else ""
-        self.survey_date = p_survey_date if not pd.isna(p_survey_date) else ""
-        self.construction_no = p_construction_no if not pd.isna(p_construction_no) else 0
         self.survey_width = p_survey_width if not pd.isna(p_survey_width) else 0.0
         self.section_length = p_section_length if not pd.isna(p_section_length) else 500.0
         self.section_area = p_survey_width * p_section_length
@@ -116,15 +103,11 @@ class PCI:
         Método para mostrar parámetros de la sección
         :return:
         """
-        print("State code:", self.state_code)
-        print("ID:", self.section_id)
-        print("Date:", self.survey_date)
-        print("CN:", self.construction_no)
         print("Width:", self.survey_width)
         print("Len:", self.section_length)
         print("Area:", self.section_area)
 
-    def set_distress(self, p_distress, p_severity, p_data):
+    def set_distress(self, p_distress: int, p_severity: int, p_data: float):
         """
         Método para definir daños y severidades
         :param p_distress: número del daño (1... 19)
@@ -136,7 +119,7 @@ class PCI:
         if not pd.isna(p_data) and p_data > 0:
             self.distress["distress_" + str(p_distress).zfill(2)][p_severity][0] = p_data
 
-    def get_distress(self, p_distress, p_severity):
+    def get_distress(self, p_distress: int, p_severity: int) -> list:
         """
         Método para devolver daños y severidades
         :param p_distress: número del daño (1... 19)
@@ -145,13 +128,56 @@ class PCI:
         """
         return self.distress["distress_" + str(p_distress).zfill(2)][p_severity]
 
-    def get_all_distresses(self):
+    def get_all_distresses(self) -> dict:
         return self.distress
 
-    def get_density(self):
+    def convert_units(self):
+        """
+        Método para convertir las unidades de daños de Sistema Internacional a Sistema Anglosajón
+        :return:
+        """
+
+        p_leng = 3.281  # parámetro multiplicador para la conversión de metros a pies
+        p_area = 10.764  # parámetro multiplicador para la conversión de metros cuadrados a pies cuadrados
+
+        self.survey_width *= p_leng
+        self.section_length *= p_leng
+        self.section_area = self.survey_width * self.section_length
+
+        for i in range(0, 3):
+            self.distress["distress_01"][i][0] *= p_area  # A - Alligator cracking
+            self.distress["distress_02"][i][0] *= p_area  # A - Bleeding
+            self.distress["distress_03"][i][0] *= p_area  # A - Block cracking
+            self.distress["distress_04"][i][0] *= p_leng  # L - Bumps and sags
+            self.distress["distress_05"][i][0] *= p_area  # A - Corrugation
+            self.distress["distress_06"][i][0] *= p_area  # A - Depression
+            self.distress["distress_07"][i][0] *= p_leng  # L - Edge cracking
+            self.distress["distress_08"][i][0] *= p_leng  # L - Joint reflection cracking
+            self.distress["distress_09"][i][0] *= p_leng  # L - Lane-shoulder drop off
+            self.distress["distress_10"][i][0] *= p_leng  # L - Long-trans cracking
+            self.distress["distress_11"][i][0] *= p_area  # A - Patching
+            self.distress["distress_13"][i][0] *= 1.0000  # N - Potholes
+            self.distress["distress_14"][i][0] *= p_area  # A - Railroad crossing
+            self.distress["distress_15"][i][0] *= p_area  # A - Rutting
+            self.distress["distress_16"][i][0] *= p_area  # A - Shoving
+            self.distress["distress_17"][i][0] *= p_area  # A - Slippage
+            self.distress["distress_18"][i][0] *= p_area  # A - Swell
+            self.distress["distress_19"][i][0] *= p_area  # A - Weathering
+
+        self.distress["distress_12"][0][0] *= p_area  # A - Polished aggregate
+
+    def get_density(self) -> float:
+        """
+        Devuelve la densidad total de daños
+        :return:
+        """
         return self.dmg_density
 
-    def get_pci(self):
+    def get_pci(self) -> float:
+        """
+        Devuelve el PCI
+        :return:
+        """
         return self.pci
 
     def print_distresses(self):
@@ -160,7 +186,7 @@ class PCI:
         :return:
         """
         for x in self.distress:
-            print("\n- %s (%s)" % (x, dict_distress[x][0].split(" ")[0]), end="  >  ")
+            print("\n- %s %s)" % (x, ("(" + dict_distress[x][0].split(" ")[0]).rjust(14, ' ')), end="  >  ")
             for y_i, y in enumerate(self.distress[x]):
                 sev = "n/a"
 
@@ -174,8 +200,7 @@ class PCI:
                 if y[0] > 0:
                     print("%s: (%s, %s, %s)" % (sev, "{:.2f}".format(y[0]).rjust(6, ' '),
                                                 "{:.2f}".format(y[1]).rjust(6, ' '),
-                                                "{:.4f}".format(y[2]).rjust(6, ' ')
-                                                ), end="  |  ")
+                                                "{:.4f}".format(y[2]).rjust(6, ' ')), end="  |  ")
 
         # self.distress_dataframe()
 
@@ -400,10 +425,7 @@ class PCI:
                     idx_row = df_cdv[df_cdv["dv"].le(row["total"])].index[-1]
                     idx_col = str(int(row["q"]))
 
-                    # print("FILA: %d, COLUMNA: %s, VALOR: %.2f" % (idx_row, idx_col, df_cdv.iloc[idx_row][idx_col]))
-
                     # Si no existe una fila siguiente, o el valor CDV de la fila o la siguiente son nulos
-
                     if not (idx_row + 1) in df_cdv.index or pd.isna(df_cdv.iloc[idx_row][idx_col]) or pd.isna(
                             df_cdv.iloc[idx_row + 1][idx_col]):
                         if idx_row < 49:
@@ -429,11 +451,7 @@ class PCI:
 
                 df_correct["cdv"] = df_cdv_col
 
-                # print("Deduct values (corrected):")
-                # print(df_correct)
-
                 total = df_correct["cdv"].max()
-                # print("Total: %.2f" % total)
 
         # Si no hay daños, el PCI es 100
         self.pci = 100 - total

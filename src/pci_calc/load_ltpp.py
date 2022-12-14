@@ -30,20 +30,17 @@ dict_distress = {
 }
 
 
-def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
+def import_ltpp_data(p_data: pd.DataFrame, p_si=True) -> PCI:
     """
     Función para importar daños desde LTPP
-    :param p_data:
+    :param p_data: Dataframe de datos de entrada (sección)
+    :param p_si: determina si la información de entrada está en Sistema Internacional de Unidades
     :return:
     """
     p_obj = PCI(working_directory)
 
     # Datos de la sección
-    p_obj.set_section(p_state_code=p_data["STATE_CODE"],
-                      p_section_id=p_data["SHRP_ID"],
-                      p_survey_date=p_data["DATE"],
-                      p_construction_no=p_data["CONSTRUCTION_NO"],
-                      p_survey_width=p_data["SURVEY_WIDTH"])
+    p_obj.set_section(p_survey_width=p_data["SURVEY_WIDTH"], p_section_length=500.0 / 3.281)
 
     # 01. Piel de cocodrilo (3 severidades)
     p_obj.set_distress(1, 0, p_data["GATOR_CRACK_A_L"])
@@ -144,10 +141,13 @@ def import_ltpp_data(p_data: pd.DataFrame) -> PCI:
     p_obj.set_distress(19, 1, p_data["RAVELING"])
     # p_obj.set_distress(19, 2, p_data[""])
 
-    # Actualización de los Deducted Value (DV)
+    # Convierte las unidades de SI a SA (solamente para el cálculo interno)
+    p_obj.convert_units() if p_si else 0
 
+    # Actualización de los Deducted Value (DV)
     p_obj.update_density()
     p_obj.update_dv()
+
     p_obj.update_pci()
 
     return p_obj
@@ -190,7 +190,7 @@ def main(pw_dir: str):
     global working_directory
     working_directory = pw_dir
 
-    p_file = pw_dir + "/res/ant_pci.csv"
+    p_file = pw_dir + "/res/ant_pci_m.csv"
     return get_ltpp_pci(p_file)
 
 
